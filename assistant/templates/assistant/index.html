@@ -1,16 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jarvis Assistant</title>
-    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <title>Jarvis AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #222; color: white; text-align: center; }
+        #chat-box { background: #333; padding: 15px; border-radius: 8px; width: 50%; margin: 20px auto; height: 300px; overflow-y: auto; }
+        .user-msg { color: lightgreen; text-align: right; margin: 5px 0; }
+        .bot-msg { color: lightblue; text-align: left; margin: 5px 0; }
+        input, button { padding: 10px; font-size: 16px; border-radius: 5px; border: none; }
+        input { width: 60%; }
+        button { margin-left: 5px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <h1>Jarvis Assistant</h1>
-    <input id="command" type="text" placeholder="Type your command here">
+
+    <h1>Jarvis AI</h1>
+
+    <div id="chat-box"></div>
+
+    <input type="text" id="command" placeholder="Type your command here">
     <button onclick="sendCommand()">Send</button>
-    <button onclick="voiceCommand()">🎤 Voice</button>
-    <p id="response"></p>
-    <script src="{% static 'script.js' %}"></script>
+    <button onclick="voiceCommand()">🎤 Speak</button>
+
+    <script>
+        function appendMessage(message, sender) {
+            let chatBox = document.getElementById("chat-box");
+            let msgDiv = document.createElement("div");
+            msgDiv.className = sender === "user" ? "user-msg" : "bot-msg";
+            msgDiv.innerText = message;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendCommand() {
+            let command = document.getElementById("command").value.trim();
+            if (!command) {
+                alert("Please type a command first!");
+                return;
+            }
+            appendMessage("You: " + command, "user");
+            document.getElementById("command").value = "";
+
+            fetch(`/get/?command=${encodeURIComponent(command)}`)
+                .then(res => res.json())
+                .then(data => {
+                    appendMessage("Jarvis: " + data.response, "bot");
+                })
+                .catch(err => console.error(err));
+        }
+
+        function voiceCommand() {
+            let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                let voiceText = event.results[0][0].transcript;
+                document.getElementById("command").value = voiceText;
+                appendMessage("You (voice): " + voiceText, "user");
+                sendCommand(); // auto-send after voice input
+            };
+
+            recognition.onerror = function() {
+                alert("Voice recognition error. Please try again.");
+            };
+        }
+    </script>
+
 </body>
 </html>
+
+
 
